@@ -71,8 +71,16 @@ class Definition(object):
                 pass
 
             if isinstance(arg, str):
+                if key != arg:
+                    raise ValueError(
+                        'Key {} does not match Field name "{}"'.format(key, arg)
+                    )
                 self.fields[key] = Field.empty(name=arg)
             elif isinstance(arg, Field):
+                if key != arg.name:
+                    raise ValueError(
+                        'Key {} does not match Field name "{}"'.format(key, arg.name)
+                    )
                 self.fields[key] = arg
             else:
                 raise TypeError(_UNSUPPORTED_TYPE_ERROR.format(type(arg)))

@@ -29,10 +29,15 @@ class Definition(object):
                 # Looks like:
                 #     "foo,bar,baz"
                 # Contains no other information.
-                # TODO create a blank field for each, with no type and no default.
-                # TODO find out how pytest.mark.parametrize handles whitespace and
-                # quotes etc, and do it identically.
-                pass
+                # Perhaps surprisingly, this isn't as intelligent as I expected.
+                # I initially expected this to support complex CSV (eg: quoted fields),
+                # but looking at the pytest source revealed it only supports basic
+                # CSV and makes no attempt to do anything but strip whitespace:
+                # https://github.com/pytest-dev/pytest/blob/8ccc0177c8be85c0725981b3a9e867baeebfbe33/src/_pytest/mark/structures.py#L97-L104
+                # Oh well, makes life easier here!
+                argnames = [x.strip() for x in args[0].split(",") if x.strip()]
+                for arg in argnames:
+                    self.fields[arg] = Field.empty(name=arg)
 
             elif isinstance(args[0], self.__class__):
                 # User passed a definition directly. Swap out the fields and
@@ -62,7 +67,7 @@ class Definition(object):
 
         for key, arg in kwargs.items():
             if key in self.fields:
-                # TODO log warning
+                # TODO log warning that an arg field is being overidden by a kwarg one.
                 pass
 
             if isinstance(arg, str):
@@ -71,3 +76,6 @@ class Definition(object):
                 self.fields[key] = arg
             else:
                 raise TypeError(_UNSUPPORTED_TYPE_ERROR.format(type(arg)))
+
+        if not self.fields:
+            raise ValueError("No fields provided")

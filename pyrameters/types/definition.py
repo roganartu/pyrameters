@@ -7,6 +7,13 @@ from pyrameters.types.field import Field
 
 # TODO setup logging
 
+_NAMELESS_FIELD_ERROR = (
+    "Nameless Field passed as arg to Definition. "
+    "Add a name or pass it as a kwarg instead: {}"
+)
+
+_UNSUPPORTED_TYPE_ERROR = "Unsupported type. Expected str or pyrameters.Field, got {}"
+
 
 class Definition(object):
     __slots__ = ("fields",)
@@ -33,8 +40,7 @@ class Definition(object):
                 # eg:
                 #    Definition(Definition("foo,bar"), foo=Field(...))
                 # should override foo from the inner Definition with foo from the kwarg.
-                # TODO this
-                pass
+                self.fields = dict(args[0].fields)
 
             else:
                 skip_first_arg = False
@@ -43,12 +49,25 @@ class Definition(object):
                 if skip_first_arg and i == 0:
                     continue
 
-                # TODO check if it's a field or a string.
-                # If it's a string, create an empty arg.
-                # If it's a field, just store it in the fields dict.
+                if isinstance(arg, str):
+                    self.fields[arg] = Field.empty(name=arg)
+                elif isinstance(arg, Field):
+                    if not arg.name:
+                        raise ValueError(_NAMELESS_FIELD_ERROR.format(arg))
+                    if arg.name in self.fields:
+                        raise ValueError('Duplicate field name "{}"'.format(arg.name))
+                    self.fields[arg.name] = arg
+                else:
+                    raise TypeError(_UNSUPPORTED_TYPE_ERROR.format(type(arg)))
 
         for key, arg in kwargs.items():
-            # TODO check if it's a field or a string.
-            # If it's a string, create an empty arg.
-            # If it's a field, just store it in the fields dict.
-            pass
+            if key in self.fields:
+                # TODO log warning
+                pass
+
+            if isinstance(arg, str):
+                self.fields[key] = Field.empty(name=arg)
+            elif isinstance(arg, Field):
+                self.fields[key] = arg
+            else:
+                raise TypeError(_UNSUPPORTED_TYPE_ERROR.format(type(arg)))

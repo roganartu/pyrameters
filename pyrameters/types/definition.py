@@ -37,6 +37,8 @@ class Definition(object):
                 # Oh well, makes life easier here!
                 argnames = [x.strip() for x in args[0].split(",") if x.strip()]
                 for arg in argnames:
+                    if arg in self.fields:
+                        raise ValueError('Duplicate field name "{}"'.format(arg))
                     self.fields[arg] = Field.empty(name=arg)
 
             elif isinstance(args[0], self.__class__):

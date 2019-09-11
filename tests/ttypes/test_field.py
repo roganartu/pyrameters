@@ -1,9 +1,8 @@
 import pytest
-from pyrameters import Field
-
 from hypothesis import given
 from hypothesis.strategies import text
 
+from pyrameters import Field
 from utils.hypothesis import everything_except
 
 

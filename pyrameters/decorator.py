@@ -1,4 +1,6 @@
-from typing import Any, Union, Sequence, Tuple
+from typing import Any, Sequence, Tuple, Union
+
+import pytest
 
 from pyrameters.types.case import Case
 from pyrameters.types.definition import Definition

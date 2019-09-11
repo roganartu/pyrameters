@@ -1,8 +1,8 @@
 import pytest
+from hypothesis import assume, given
+from hypothesis import strategies as st
+
 from pyrameters import Definition, Field
-
-from hypothesis import given, assume, strategies as st
-
 from utils.hypothesis import everything_except, non_empty_string
 
 

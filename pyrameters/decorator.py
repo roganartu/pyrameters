@@ -54,12 +54,8 @@ def test_cases(
     # TODO build arg list
     # TODO pass built argstring and arglist to parametrize
     def wrapper(f):
-        @pytest.mark.parametrize(
+        return pytest.mark.parametrize(
             argnames, argvalues, indirect=indirect, ids=ids, scope=scope
-        )
-        def wrapped(*args, **kwargs):
-            return f(*args, **kwargs)
-
-        return wrapped
+        )(f)
 
     return wrapper

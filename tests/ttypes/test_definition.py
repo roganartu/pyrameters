@@ -3,7 +3,7 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from pyrameters import Definition, Field
-from utils.hypothesis import everything_except, non_empty_string
+from utils.hypothesis import everything_except, non_empty_strings
 
 
 def extract_args(arg_def):
@@ -17,7 +17,9 @@ def no_dupes(arg_def):
 
 def valid_definition_str():
     return (
-        non_empty_string().filter(lambda x: x.replace(",", "").strip()).filter(no_dupes)
+        non_empty_strings()
+        .filter(lambda x: x.replace(",", "").strip())
+        .filter(no_dupes)
     )
 
 
@@ -30,7 +32,7 @@ def test_str_args(arg_def):
 @given(valid_definition_str(), st.data())
 def test_with_kwargs(arg_def, data):
     args = extract_args(arg_def)
-    kwargs = {k: k for k in data.draw(st.sets(non_empty_string(), min_size=1))}
+    kwargs = {k: k for k in data.draw(st.sets(non_empty_strings(), min_size=1))}
 
     assume(not any(a in kwargs for a in args))
 
@@ -38,10 +40,10 @@ def test_with_kwargs(arg_def, data):
     assert len(actual.fields) == len(extract_args(arg_def)) + len(kwargs)
 
 
-@given(valid_definition_str(), non_empty_string(), st.data())
+@given(valid_definition_str(), non_empty_strings(), st.data())
 def test_all_field_positions(arg_def, arg_field, data):
     args = extract_args(arg_def)
-    kwargs = {k: k for k in data.draw(st.sets(non_empty_string(), min_size=1))}
+    kwargs = {k: k for k in data.draw(st.sets(non_empty_strings(), min_size=1))}
 
     assume(arg_field not in args)
     assume(arg_field not in kwargs)
@@ -51,13 +53,13 @@ def test_all_field_positions(arg_def, arg_field, data):
     assert len(actual.fields) == len(args) + len(kwargs) + 1
 
 
-@given(valid_definition_str(), st.shared(non_empty_string(), key="field"), st.data())
+@given(valid_definition_str(), st.shared(non_empty_strings(), key="field"), st.data())
 def test_kwarg_overwrites_arg_field(arg_def, arg_field, data):
     args = extract_args(arg_def)
     kwargs = {
         k: k
         for k in data.draw(
-            st.sets(st.shared(non_empty_string(), key="field"), min_size=1)
+            st.sets(st.shared(non_empty_strings(), key="field"), min_size=1)
         )
     }
 
@@ -68,7 +70,7 @@ def test_kwarg_overwrites_arg_field(arg_def, arg_field, data):
     assert len(actual.fields) == len(args) + len(kwargs)
 
 
-@given(st.dictionaries(non_empty_string(), non_empty_string(), min_size=1))
+@given(st.dictionaries(non_empty_strings(), non_empty_strings(), min_size=1))
 def test_bad_kwargs(kwargs):
     assume(any(k != v for k, v in kwargs.items()))
 

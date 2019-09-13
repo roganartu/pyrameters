@@ -50,12 +50,18 @@ def test_cases(
         Passed through to @pytest.mark.parametrize unchanged. See pytest documentation
         for usage.
     """
-    # TODO build argstring
+    # Figure out the pytest.mark.parametrize-compatible list of args to pass
+    if isinstance(argnames, str):
+        definition_str = argnames
+    elif isinstance(argnames, Definition):
+        definition_str = str(argnames)
+
     # TODO build arg list
     # TODO pass built argstring and arglist to parametrize
+
     def wrapper(f):
         return pytest.mark.parametrize(
-            argnames, argvalues, indirect=indirect, ids=ids, scope=scope
+            definition_str, argvalues, indirect=indirect, ids=ids, scope=scope
         )(f)
 
     return wrapper

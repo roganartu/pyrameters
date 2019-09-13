@@ -18,5 +18,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[],
-    extras_require={"test": ["pytest", "hypothesis"]},
+    extras_require={"test": ["pytest", "hypothesis", "dill"]},
 )

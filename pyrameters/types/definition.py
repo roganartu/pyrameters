@@ -89,3 +89,6 @@ class Definition(object):
 
         if not self.fields:
             raise ValueError("No fields provided")
+
+    def __str__(self):
+        return ",".join(sorted(f for f in self.fields))

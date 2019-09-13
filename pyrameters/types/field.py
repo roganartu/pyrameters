@@ -25,6 +25,19 @@ class Field(object):
         self._default = default
         self._factory = factory
 
+    def __repr__(self):
+        output = "Field("
+        output += "name={}".format(self.name)
+
+        default_val, has_default = self.default
+        output += ", has_default={}".format(has_default)
+        if has_default:
+            output += ", default={}".format(default_val)
+            output += ", from_factory={}".format(self._factory is not None)
+
+        output += ")"
+        return output
+
     @property
     def default(self):
         if self._default != defaultValues.NO_DEFAULT:

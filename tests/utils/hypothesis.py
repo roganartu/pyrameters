@@ -29,8 +29,8 @@ def valid_field_names(draw):
     These are documented here:
     https://docs.python.org/3.3/reference/lexical_analysis.html#identifiers
     """
-    ok_chars = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split()
-    numbers = "0123456789".split()
+    ok_chars = list("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    numbers = list("0123456789")
     first_char = draw(st.sampled_from(ok_chars))
     remaining_chars = draw(st.lists(st.sampled_from(ok_chars + numbers), max_size=1000))
     name = "{}{}".format(first_char, "".join(remaining_chars))
@@ -58,9 +58,12 @@ def valid_fields(draw, exclude_names=None):
         # Make sure we don't have both a factory and a static default val
         if not should_factory:
             default = draw(field_values())
-        # TODO fix this. The generated functions include IO and so fail to serialise
-        # else:
-        #    factory = draw(st.functions(like=(lambda: None), returns=field_values()))
+        else:
+            # Can't create factories, they break a bunch of things in the hypothesis
+            # tests still.
+            # TODO fix these
+            # factory = draw(st.functions(like=(lambda: None), returns=field_values()))
+            pass
 
     return pyrameters.Field(name, default=default, factory=factory)
 
@@ -100,9 +103,12 @@ def valid_definitions(draw, max_size=20):
 
     Reduces on number of fields and whether they do or don't have defaults.
     """
-    fields = list(draw(st.lists(valid_fields(), min_size=1, max_size=20)))
+    fields = list(draw(st.sets(valid_fields(), min_size=1, max_size=20)))
 
-    # Make sure we get unique field names
-    assume(len(set(f.name for f in fields)) == len(fields))
+    # Make sure we have no dupes.
+    # For some reason drawing from `st.sets` above doesn't work, even if we define
+    # Field.__hash__ to simple return hash(f.name).
+    field_names = set(f.name for f in fields)
+    assume(len(field_names) == len(fields))
 
-    return pyrameters.Definition(*fields)
+    return pyrameters.Definition(*list(fields))

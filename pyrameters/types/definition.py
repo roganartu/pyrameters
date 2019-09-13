@@ -92,3 +92,11 @@ class Definition(object):
 
     def __str__(self):
         return ",".join(sorted(f for f in self.fields))
+
+    def __repr__(self):
+        output = "Definition("
+        output += ", ".join(
+            ["{}={}".format(name, repr(f)) for name, f in self.fields.items()]
+        )
+        output += ")"
+        return output

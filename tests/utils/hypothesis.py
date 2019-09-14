@@ -1,3 +1,4 @@
+from keyword import iskeyword
 from string import printable
 
 from hypothesis import assume
@@ -38,6 +39,7 @@ def valid_field_names(draw):
     # We've tried our best above, which should keep hypothesis generation happy, but
     # just to be safe, let Python decide if the name is an ok identifier.
     assume(name.isidentifier())
+    assume(not iskeyword(name))
 
     return name
 

@@ -91,7 +91,14 @@ class Definition(object):
             raise ValueError("No fields provided")
 
     def __str__(self):
-        return ",".join(sorted(f for f in self.fields))
+        """
+        This string representation is used as the arglist string that is passed to
+        @pytest.mark.parametrize.
+
+        Build the string with fields ordered as they were received, so that both
+        string and Definition based definitions are handled correctly.
+        """
+        return ",".join(f for f in self.fields)
 
     def __repr__(self):
         output = "Definition("

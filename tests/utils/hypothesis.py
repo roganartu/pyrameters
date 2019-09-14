@@ -130,7 +130,7 @@ def cases_for(draw, definition_strategy, min_count=1, max_count=10):
     cases = []
     for _ in range(count):
         cases.append(
-            tuple(draw(field_values(), label=f) for f in sorted(definition.fields))
+            tuple(draw(field_values(), label=f) for f in definition.fields)
         )
 
     return cases

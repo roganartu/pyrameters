@@ -2,12 +2,12 @@ from datetime import timedelta
 from string import printable
 
 import pytest
-from hypothesis import given, seed, settings
+from hypothesis import assume, given, seed, settings
 from hypothesis import strategies as st
 
 import pyrameters
 from utils.decorator import run_in_decorator
-from utils.hypothesis import field_values, valid_definitions
+from utils.hypothesis import cases_for, field_values, valid_definitions
 
 
 @pyrameters.test_cases("x", [1, 2, 3])
@@ -40,24 +40,27 @@ def test_cases_unused_smoke_test_multi(x, y, z):
     assert isinstance(z, str)
 
 
-@given(valid_definitions(), st.integers(min_value=1, max_value=50), st.data())
+@given(
+    st.shared(valid_definitions(), key="with_cases"),
+    cases_for(
+        st.shared(valid_definitions(), key="with_cases"), min_count=1, max_count=50
+    ),
+)
 @settings(deadline=timedelta(milliseconds=1000))
-def test_invocation_count_via_tuples(testdir, definition, count, data):
+def test_invocation_count_via_tuples(testdir, definition, cases):
     """
     Verify that the wrapped method is invoked once per test case when using
     pyrameters.Definition.
     """
-    # Generate the input data for the invocations
-    cases = []
-    for _ in range(count):
-        cases.append(
-            tuple(data.draw(field_values(), label=f) for f in definition.fields)
-        )
+    # Make sure that the cases generated have the correct number of fields
+    # Don't use assume for this, because a failure here is an error, and we don't want
+    # hypothesis to workaround it to keep tests green.
+    assert all(len(c) == len(definition.fields) for c in cases)
 
     result = run_in_decorator(testdir, definition, cases)
     # Assert we ran the expected number of tests
     passed, skipped, failed = result.listoutcomes()
-    assert len(passed) == count
+    assert len(passed) == len(cases)
     assert len(skipped) == 0
     assert len(failed) == 0
 

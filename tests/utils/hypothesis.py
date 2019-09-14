@@ -112,3 +112,25 @@ def valid_definitions(draw, max_size=20):
     assume(len(field_names) == len(fields))
 
     return pyrameters.Definition(*list(fields))
+
+
+@st.composite
+def cases_for(draw, definition_strategy, min_count=1, max_count=10):
+    """
+    Generates cases to run through the decorator based on the fields in the given
+    definition.
+
+    TODO enable this to return either tuples, pyrameters.Case, or both.
+    """
+    # This is a shared strategy, so we should get the same fields as the definition
+    # generated in the given this is called from.
+    definition = draw(definition_strategy)
+
+    count = draw(st.integers(min_value=min_count, max_value=max_count))
+    cases = []
+    for _ in range(count):
+        cases.append(
+            tuple(draw(field_values(), label=f) for f in sorted(definition.fields))
+        )
+
+    return cases

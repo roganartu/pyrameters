@@ -8,8 +8,7 @@ from hypothesis import strategies as st
 import pyrameters
 from utils.asserts import assert_pytest_outcomes
 from utils.decorator import run_in_decorator
-from utils.hypothesis import (cases_for, field_values,
-                              valid_definition_strings, valid_definitions)
+from utils.hypothesis import any_style_definitions, cases_for, field_values
 
 
 @pyrameters.test_cases("x", [1, 2, 3])
@@ -43,42 +42,30 @@ def test_cases_unused_smoke_test_multi(x, y, z):
 
 
 @given(
-    st.shared(valid_definitions(), key="with_cases"),
+    st.shared(any_style_definitions(), key="with_cases"),
     cases_for(
-        st.shared(valid_definitions(), key="with_cases"), min_count=1, max_count=50
+        st.shared(any_style_definitions(), key="with_cases"), min_count=1, max_count=50
     ),
 )
 @settings(deadline=timedelta(milliseconds=1000))
-def test_invocation_count_with_def_obj_and_tuples(testdir, definition, cases):
+def test_invocation_count_with_tuples(testdir, definition, cases):
     """
     Verify that the wrapped method is invoked once per test case when using
-    pyrameters.Definition.
+    pyrameters.Definition or a @pytest.mark.parametrize-style string-based definition.
     """
     # Make sure that the cases generated have the correct number of fields
     # Don't use assume for this, because a failure here is an error, and we don't want
     # hypothesis to workaround it to keep tests green.
-    assert all(len(c) == len(definition.fields) for c in cases)
+    if isinstance(definition, str):
+        field_count = len(definition.split(","))
+    else:
+        field_count = len(definition.fields)
+    assert all(len(c) == field_count for c in cases)
 
     result = run_in_decorator(testdir, definition, cases)
     assert_pytest_outcomes(result, passes=len(cases))
 
 
-@given(
-    st.shared(valid_definition_strings(), key="with_cases"),
-    cases_for(
-        st.shared(valid_definition_strings(), key="with_cases"),
-        min_count=1,
-        max_count=50,
-    ),
-)
-@settings(deadline=timedelta(milliseconds=1000))
-def test_invocation_count_with_def_string_and_tuples(testdir, definition, cases):
-    """
-    Verify that the wrapped method is invoked once per test case when using
-    a @pytest.mark.parametrize-style string-based definition.
-    """
-    result = run_in_decorator(testdir, definition, cases)
-    assert_pytest_outcomes(result, passes=len(cases))
 
 
 # TODO add test for invocation count using Definition created via string with lists(valid_field_names) and join

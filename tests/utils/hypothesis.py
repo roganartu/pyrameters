@@ -127,6 +127,16 @@ def valid_definition_strings(draw, max_size=20):
 
 
 @st.composite
+def any_style_definitions(draw, max_size=20):
+    return draw(
+        st.one_of(
+            valid_definitions(max_size=max_size),
+            valid_definition_strings(max_size=max_size),
+        )
+    )
+
+
+@st.composite
 def cases_for(draw, definition_strategy, min_count=1, max_count=10):
     """
     Generates cases to run through the decorator based on the fields in the given

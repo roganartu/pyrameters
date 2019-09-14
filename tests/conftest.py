@@ -4,7 +4,7 @@ import hypothesis
 import pytest
 
 # Provides the testdir fixture
-pytest_plugins = "pytester"
+pytest_plugins = "pytester", "hypothesis"
 
 # Change some hypothesis settings
 hypothesis.settings.register_profile("default", max_examples=50)

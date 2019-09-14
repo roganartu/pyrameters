@@ -115,6 +115,16 @@ def valid_definitions(draw, max_size=20):
 
 
 @st.composite
+def valid_definition_strings(draw, max_size=20):
+    """
+    Generates definition strings (with field named) that contain at most
+    max_size number of fields.
+    """
+    fields = draw(st.sets(valid_field_names(), min_size=1, max_size=max_size))
+    return ",".join(list(fields))
+
+
+@st.composite
 def cases_for(draw, definition_strategy, min_count=1, max_count=10):
     """
     Generates cases to run through the decorator based on the fields in the given
@@ -126,11 +136,15 @@ def cases_for(draw, definition_strategy, min_count=1, max_count=10):
     # generated in the given this is called from.
     definition = draw(definition_strategy)
 
-    count = draw(st.integers(min_value=min_count, max_value=max_count))
+    # Handle both Definition and string-based
+    if isinstance(definition, str):
+        fields = [x.strip() for x in definition.split(",")]
+    else:
+        fields = definition.fields
+
     cases = []
+    count = draw(st.integers(min_value=min_count, max_value=max_count))
     for _ in range(count):
-        cases.append(
-            tuple(draw(field_values(), label=f) for f in definition.fields)
-        )
+        cases.append(tuple(draw(field_values(), label=f) for f in fields))
 
     return cases

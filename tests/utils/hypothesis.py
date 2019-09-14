@@ -178,13 +178,21 @@ def any_style_definitions(draw, max_size=20):
 
 
 @st.composite
-def cases_for(draw, definition_strategy, min_count=1, max_count=10):
+def cases_for(
+    draw,
+    definition_strategy,
+    min_count=1,
+    max_count=10,
+    tuples=True,
+    mappings=True,
+    use_defaults=None,
+):
     """
     Generates cases to run through the decorator based on the fields in the given
     definition.
-
-    TODO enable this to return either tuples, pyrameters.Case, or both.
     """
+    assert tuples or mappings, "One of tuples or mappings must be True"
+
     # This is a shared strategy, so we should get the same fields as the definition
     # generated in the given this is called from.
     definition = draw(definition_strategy)
@@ -195,9 +203,41 @@ def cases_for(draw, definition_strategy, min_count=1, max_count=10):
     else:
         fields = definition.fields
 
-    cases = []
+    generated = []
     count = draw(st.integers(min_value=min_count, max_value=max_count))
     for _ in range(count):
-        cases.append(tuple(draw(field_values(), label=f) for f in fields))
+        # Choose Mapping or tuple version of field values
+        should_tuple = tuples
+        if tuples and mappings:
+            should_tuple = draw(st.booleans(), label="should_tuple")
+        should_mapping = not should_tuple
 
-    return cases
+        if should_tuple:
+            generated.append(tuple(draw(field_values(), label=f) for f in fields))
+
+        if should_mapping:
+
+            def should_default(f):
+                # Whether or not we should rely on defaults is a little complicated.
+                # To allow exception flow testing, we need to passthrough the kwarg
+                # when it's provided.
+                # Otherwise, we should only rely on a default value if the definition
+                # is the correct type, the default exists, and we draw a True from
+                # hypothesis.
+                if use_defaults is not None:
+                    return use_defaults
+                return (
+                    isinstance(definition, pyrameters.Definition)
+                    and fields[f].default[1]
+                    and draw(st.booleans(), label="should_default")
+                )
+
+            generated.append(
+                {
+                    f: draw(field_values(), label=f)
+                    for f in fields
+                    if not should_default(f)
+                }
+            )
+
+    return generated

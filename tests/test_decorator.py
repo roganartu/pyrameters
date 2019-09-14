@@ -52,15 +52,6 @@ def test_invocation_count_with_tuples(testdir, definition, cases):
     Verify that the wrapped method is invoked once per test case when using
     pyrameters.Definition or a @pytest.mark.parametrize-style string-based definition.
     """
-    # Make sure that the cases generated have the correct number of fields
-    # Don't use assume for this, because a failure here is an error, and we don't want
-    # hypothesis to workaround it to keep tests green.
-    if isinstance(definition, str):
-        field_count = len(definition.split(","))
-    else:
-        field_count = len(definition.fields)
-    assert all(len(c) == field_count for c in cases)
-
     result = run_in_decorator(testdir, definition, cases)
     assert result.ret == 0
 

@@ -1,6 +1,6 @@
 """
 Definition represents the definition of a pyrameters test, by which each provided
-Case must adhere.
+test case must adhere.
 """
 
 from pyrameters.types.field import Field

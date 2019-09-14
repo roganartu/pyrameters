@@ -9,10 +9,9 @@ def run_in_decorator(testdir, definition, cases):
     expected to run.
     The easiest way to achieve this is to simply pickle the fn variable, and then
     unpickle it into a function with the test_ prefix.
-    TODO this fails to serialize fields that have a factory
-    TODO pull this into a separate helper function that takes a definition and some
-    cases and returns the result of running them.
     We need this for more than just this test case, no reason to duplicate it.
+
+    TODO this fails to serialize fields that have a factory
     """
     pickled_def = pickle.dumps(definition)
     pickled_cases = pickle.dumps(cases)

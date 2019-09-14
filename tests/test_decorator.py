@@ -1,12 +1,12 @@
 from datetime import timedelta
 from string import printable
 
-import dill as pickle
 import pytest
 from hypothesis import given, seed, settings
 from hypothesis import strategies as st
 
 import pyrameters
+from utils.decorator import run_in_decorator
 from utils.hypothesis import field_values, valid_definitions
 
 
@@ -54,34 +54,7 @@ def test_invocation_count_via_tuples(testdir, definition, count, data):
             tuple(data.draw(field_values(), label=f) for f in definition.fields)
         )
 
-    # Run the test through the decorator, calling a mock
-    # We can use the pytest testdir fixture to run a dynamically generated Python test
-    # file, and then assert the number of lines in the output is the number of cases we
-    # expected to run.
-    # The easiest way to achieve this is to simply pickle the fn variable, and then
-    # unpickle it into a function with the test_ prefix.
-    # TODO this fails to serialize fields that have a factory
-    pickled_def = pickle.dumps(definition)
-    pickled_cases = pickle.dumps(cases)
-    result = testdir.inline_runsource(
-        """
-        import dill as pickle
-        import pytest
-
-        import pyrameters
-
-        definition = pickle.loads({})
-        cases = pickle.loads({})
-
-        @pyrameters.test_cases(definition, cases)
-        def test_nested({}):
-            assert True
-    """.format(
-            pickled_def, pickled_cases, str(definition)
-        ),
-        "-qq",
-    )
-
+    result = run_in_decorator(testdir, definition, cases)
     # Assert we ran the expected number of tests
     passed, skipped, failed = result.listoutcomes()
     assert len(passed) == count

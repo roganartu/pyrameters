@@ -6,7 +6,6 @@ from hypothesis import assume, given, seed, settings
 from hypothesis import strategies as st
 
 import pyrameters
-from utils.asserts import assert_pytest_outcomes
 from utils.decorator import run_in_decorator
 from utils.hypothesis import any_style_definitions, cases_for, field_values
 
@@ -63,8 +62,12 @@ def test_invocation_count_with_tuples(testdir, definition, cases):
     assert all(len(c) == field_count for c in cases)
 
     result = run_in_decorator(testdir, definition, cases)
-    assert_pytest_outcomes(result, passes=len(cases))
+    assert result.ret == 0
 
+    passed, skipped, failed = result.listoutcomes()
+    assert len(passed) == len(cases)
+    assert len(skipped) == 0
+    assert len(failed) == 0
 
 
 

@@ -98,14 +98,8 @@ def valid_json(draw, max_leaves=10):
 
 
 @st.composite
-def valid_definitions(draw, max_size=20):
-    """
-    Generates valid pyrameters.Definition objects, with at least one field, with or
-    without default values,factories.
-
-    Reduces on number of fields and whether they do or don't have defaults.
-    """
-    fields = list(draw(st.sets(valid_fields(), min_size=1, max_size=20)))
+def unique_field_lists(draw, max_size=20, exclude_fields=None):
+    fields = list(draw(st.sets(valid_fields(), min_size=1, max_size=max_size)))
 
     # Make sure we have no dupes.
     # For some reason drawing from `st.sets` above doesn't work, even if we define
@@ -113,25 +107,72 @@ def valid_definitions(draw, max_size=20):
     field_names = set(f.name for f in fields)
     assume(len(field_names) == len(fields))
 
-    return pyrameters.Definition(*list(fields))
+    if exclude_fields is not None:
+        assume(not field_names & set(exclude_fields))
+
+    return fields
 
 
 @st.composite
-def valid_definition_strings(draw, max_size=20):
+def valid_definitions(draw, max_size=20):
+    """
+    Generates valid pyrameters.Definition objects, with at least one field, with or
+    without default values,factories.
+
+    Reduces on number of fields and whether they do or don't have defaults.
+    """
+    return pyrameters.Definition(*list(draw(unique_field_lists(max_size=max_size))))
+
+
+@st.composite
+def valid_definition_strings(draw, max_size=20, exclude_fields=None):
     """
     Generates definition strings (with field named) that contain at most
     max_size number of fields.
     """
     fields = draw(st.sets(valid_field_names(), min_size=1, max_size=max_size))
+
+    if exclude_fields is not None:
+        assume(not fields & set(exclude_fields))
+
     return ",".join(list(fields))
+
+
+@st.composite
+def valid_combination_definitions(draw, max_size=20, exclude_fields=None):
+    """
+    Generates combination definitions, which have a normal definition string
+    a la @pytest.mark.parametrize, followed by one or more field overrides.
+    """
+    assert max_size > 1
+
+    # This must leave room for at least one overriding field.
+    base_definition = draw(
+        valid_definition_strings(max_size=max_size - 1, exclude_fields=exclude_fields)
+    )
+    new_fields = [x.strip() for x in base_definition.split(",")]
+    if exclude_fields is None:
+        exclude_fields = []
+    else:
+        exclude_fields = list(exclude_fields)
+    exclude_fields.extend(new_fields)
+
+    field_count = len(new_fields)
+    overrides = draw(
+        unique_field_lists(
+            max_size=max_size - field_count, exclude_fields=exclude_fields
+        )
+    )
+    return pyrameters.Definition(base_definition, *list(overrides))
 
 
 @st.composite
 def any_style_definitions(draw, max_size=20):
     return draw(
         st.one_of(
-            valid_definitions(max_size=max_size),
             valid_definition_strings(max_size=max_size),
+            valid_definitions(max_size=max_size),
+            valid_combination_definitions(max_size=max_size),
         )
     )
 

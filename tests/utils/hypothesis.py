@@ -24,7 +24,7 @@ def non_empty_strings():
 
 
 @st.composite
-def valid_field_names(draw):
+def valid_field_names(draw, exclude_names=None):
     """
     Generates valid field names, which are the same as valid Python identifier names.
 
@@ -36,6 +36,8 @@ def valid_field_names(draw):
     first_char = draw(st.sampled_from(ok_chars))
     remaining_chars = draw(st.lists(st.sampled_from(ok_chars + numbers), max_size=1000))
     name = "{}{}".format(first_char, "".join(remaining_chars))
+
+    assume(exclude_names is None or name not in exclude_names)
 
     # We've tried our best above, which should keep hypothesis generation happy, but
     # just to be safe, let Python decide if the name is an ok identifier.
@@ -55,8 +57,7 @@ def valid_fields(draw, exclude_names=None):
     """
     Generates valid pyrameters.Field objects.
     """
-    name = draw(valid_field_names())
-    assume(exclude_names is None or name not in exclude_names)
+    name = draw(valid_field_names(exclude_names=exclude_names))
     should_default = draw(st.booleans())
     should_factory = draw(st.booleans())
 
@@ -106,18 +107,36 @@ def valid_json(draw, max_leaves=10):
 
 @st.composite
 def unique_field_lists(draw, max_size=20, exclude_fields=None):
-    fields = list(draw(st.sets(valid_fields(), min_size=1, max_size=max_size)))
+    if exclude_fields is None:
+        exclude_fields = []
+    exclude_fields = set(exclude_fields)
 
-    # Make sure we have no dupes.
-    # For some reason drawing from `st.sets` above doesn't work, even if we define
-    # Field.__hash__ to simple return hash(f.name).
-    field_names = set(f.name for f in fields)
-    assume(len(field_names) == len(fields))
-
-    if exclude_fields is not None:
-        assume(not field_names & set(exclude_fields))
+    target_count = draw(st.integers(min_value=1, max_value=max_size))
+    fields = []
+    while len(fields) < target_count:
+        f = draw(valid_fields(exclude_names=exclude_fields | {f.name for f in fields}))
+        fields.append(f)
 
     return fields
+
+
+@st.composite
+def extra_fields(draw, definition_strategy, max_size=10):
+    """
+    Generates fields with names not in the given definition strategy.
+    This is useful for generating new fields to test appending to existing Definitions.
+    """
+    # This is a shared strategy, so we should get the same fields as the definition
+    # generated in the given this is called from.
+    definition = draw(definition_strategy)
+
+    # Handle both Definition and string-based
+    if isinstance(definition, str):
+        fields = [x.strip() for x in definition.split(",")]
+    else:
+        fields = [f for f in definition.fields]
+
+    return draw(unique_field_lists(max_size=max_size, exclude_fields=fields))
 
 
 @st.composite
@@ -137,7 +156,13 @@ def valid_definition_strings(draw, max_size=20, exclude_fields=None):
     Generates definition strings (with field named) that contain at most
     max_size number of fields.
     """
-    fields = draw(st.sets(valid_field_names(), min_size=1, max_size=max_size))
+    fields = draw(
+        st.sets(
+            valid_field_names(exclude_names=exclude_fields),
+            min_size=1,
+            max_size=max_size,
+        )
+    )
 
     if exclude_fields is not None:
         assume(not fields & set(exclude_fields))
@@ -174,12 +199,34 @@ def valid_combination_definitions(draw, max_size=20, exclude_fields=None):
 
 
 @st.composite
+def valid_overridden_definitions(draw, max_size=20, exclude_fields=None):
+    """
+    Generates Defintions with field overrides.
+    ie: Definition(Definition(...), Field(...), Field(...), ...)
+    """
+    assert max_size > 1
+
+    definition = draw(
+        valid_definitions(max_size=max_size - 1, exclude_fields=exclude_fields)
+    )
+    # Don't pass any exclude fields. This allows the following strategy to include both
+    # added fields and overridden fields.
+    new_fields = {
+        f.name: f
+        for f in draw(unique_field_lists(max_size=max_size - len(definition.fields)))
+    }
+
+    return pyrameters.Definition(definition, **new_fields)
+
+
+@st.composite
 def any_style_definitions(draw, max_size=20):
     return draw(
         st.one_of(
             valid_definition_strings(max_size=max_size),
             valid_definitions(max_size=max_size),
             valid_combination_definitions(max_size=max_size),
+            valid_overridden_definitions(max_size=max_size),
         )
     )
 

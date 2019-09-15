@@ -43,7 +43,7 @@ def test_cases_unused_smoke_test_multi(x, y, z):
 @given(
     st.shared(any_style_definitions(), key="with_cases"),
     cases_for(
-        st.shared(any_style_definitions(), key="with_cases"), min_count=1, max_count=40
+        st.shared(any_style_definitions(), key="with_cases"), min_count=1, max_count=25
     ),
 )
 @settings(deadline=timedelta(milliseconds=2000))

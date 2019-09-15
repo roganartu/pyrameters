@@ -1,6 +1,7 @@
 from keyword import iskeyword
 from string import printable
 
+import pytest
 from hypothesis import assume
 from hypothesis import strategies as st
 
@@ -244,6 +245,7 @@ def cases_for(
     min_count=1,
     max_count=10,
     tuples=True,
+    parameters=True,
     mappings=None,
     use_defaults=None,
 ):
@@ -260,7 +262,9 @@ def cases_for(
     if mappings is None and isinstance(definition, pyrameters.Definition):
         mappings = True
 
-    assert tuples or mappings, "One of tuples or mappings must be True"
+    assert (
+        tuples or mappings or parameters
+    ), "One of tuples, mappings, or parameters must be True"
 
     # Handle both Definition and string-based
     if isinstance(definition, str):
@@ -272,15 +276,23 @@ def cases_for(
     count = draw(st.integers(min_value=min_count, max_value=max_count))
     for _ in range(count):
         # Choose Mapping or tuple version of field values
-        should_tuple = tuples
-        if tuples and mappings:
-            should_tuple = draw(st.booleans(), label="should_tuple")
-        should_mapping = not should_tuple
+        format_options = []
+        if tuples:
+            format_options.append("tuple")
+        if parameters:
+            format_options.append("param")
+        if mappings:
+            format_options.append("mapping")
+        output_format = draw(st.sampled_from(format_options), label="format")
 
-        if should_tuple:
+        if output_format == "tuple":
             generated.append(tuple(draw(field_values(), label=f) for f in fields))
 
-        elif should_mapping:
+        elif output_format == "param":
+            build_args = [field_values() for f in fields]
+            generated.append(draw(st.builds(pytest.param, *build_args), label="param"))
+
+        elif output_format == "mapping":
 
             def should_default(f):
                 # Whether or not we should rely on defaults is a little complicated.

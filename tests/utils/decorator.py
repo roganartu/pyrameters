@@ -4,9 +4,11 @@ RESERVED_NAMES = {
     "Mapping",
     "pickle",
     "pytest",
+    "_pytest",
     "pyrameters",
     "definition",
     "cases",
+    "num_cases",
     "ω",
     "test_nested",
     "assert_msg",
@@ -36,6 +38,7 @@ def run_in_decorator(testdir, definition, cases):
         from collections.abc import Mapping
         import dill as pickle
         import pytest
+        import _pytest.mark.structures
 
         import pyrameters
 
@@ -69,16 +72,28 @@ def run_in_decorator(testdir, definition, cases):
                     assert locals()[f] == expected_val, assert_msg.format(f)
 
                 # No defaults, need to unwrap tuples
-                elif len(fields) == len(cases[ω]):
-                    for i, f in enumerate(fields):
-                        expected_val = cases[ω][f] if isinstance(cases[ω], Mapping) else cases[ω][i]
-                        assert locals()[f] == expected_val, assert_msg.format(f)
-
-                # Fields doesn't match count, need to check defaults.
                 else:
-                    for f in fields:
-                        expected_val = cases[ω].get(f, definition.fields[f].default[0])
-                        assert locals()[f] == expected_val, assert_msg.format(f)
+                    num_cases = len(cases[ω].values) if isinstance(cases[ω], _pytest.mark.structures.ParameterSet) else len(cases[ω])
+                    if len(fields) == num_cases:
+                        for i, f in enumerate(fields):
+                            if isinstance(cases[ω], Mapping):
+                                expected_val = cases[ω][f]
+                            elif isinstance(cases[ω], _pytest.mark.structures.ParameterSet):
+                                expected_val = cases[ω].values[i]
+                            else:
+                                # Regular old tuple
+                                expected_val = cases[ω][i]
+                            assert locals()[f] == expected_val, assert_msg.format(f)
+
+                    # Fields doesn't match count, need to check defaults.
+                    else:
+                        for f in fields:
+                            if isinstance(cases[ω], Mapping):
+                                expected_val = cases[ω].get(f, definition.fields[f].default[0])
+                            else:
+                                # Other types don't support defaults
+                                raise ValueError("Field {{}} does not have a default, but test case is not a collections.abc.Mapping".format(f))
+                            assert locals()[f] == expected_val, assert_msg.format(f)
 
             finally:
                 ω += 1

@@ -140,14 +140,18 @@ def extra_fields(draw, definition_strategy, max_size=10):
 
 
 @st.composite
-def valid_definitions(draw, max_size=20):
+def valid_definitions(draw, max_size=20, exclude_fields=None):
     """
     Generates valid pyrameters.Definition objects, with at least one field, with or
     without default values,factories.
 
     Reduces on number of fields and whether they do or don't have defaults.
     """
-    return pyrameters.Definition(*list(draw(unique_field_lists(max_size=max_size))))
+    return pyrameters.Definition(
+        *list(
+            draw(unique_field_lists(max_size=max_size, exclude_fields=exclude_fields))
+        )
+    )
 
 
 @st.composite

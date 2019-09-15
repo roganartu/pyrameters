@@ -15,7 +15,7 @@ def everything_except(*args):
     return (
         st.from_type(type)
         .flatmap(st.from_type)
-        .filter(lambda x: not isinstance(x, args))
+        .filter(lambda x: not isinstance(x, tuple(args)))
     )
 
 

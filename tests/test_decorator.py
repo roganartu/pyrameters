@@ -24,6 +24,7 @@ def test_cases_smoke_test_multi(x, y):
 
 
 @given(st.text(printable))
+@settings(max_examples=settings().max_examples * 30)
 @pyrameters.test_cases("x", [1, 2, 3])
 def test_cases_unused_smoke_test(x, y):
     """Verify that unused args are pass through unconsumed."""
@@ -32,6 +33,7 @@ def test_cases_unused_smoke_test(x, y):
 
 
 @given(st.text(printable))
+@settings(max_examples=settings().max_examples * 30)
 @pyrameters.test_cases("x,y", [(1, 2), (3, 4)])
 def test_cases_unused_smoke_test_multi(x, y, z):
     """Verify that unused args are pass through unconsumed."""
@@ -46,7 +48,9 @@ def test_cases_unused_smoke_test_multi(x, y, z):
         st.shared(any_style_definitions(), key="with_cases"), min_count=1, max_count=25
     ),
 )
-@settings(deadline=timedelta(milliseconds=2000))
+@settings(
+    deadline=timedelta(milliseconds=2000), max_examples=settings().max_examples * 1
+)
 def test_invocation_count_with_tuples(testdir, definition, cases):
     """
     Verify that the wrapped method is invoked once per test case when using

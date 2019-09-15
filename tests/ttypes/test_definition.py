@@ -1,5 +1,5 @@
 import pytest
-from hypothesis import assume, given
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from pyrameters import Definition, Field
@@ -12,6 +12,7 @@ def extract_args(arg_def):
 
 
 @given(valid_definition_strings())
+@settings(max_examples=settings().max_examples * 10)
 def test_str_args(arg_def):
     actual = Definition(arg_def)
     assert len(actual.fields) == len(extract_args(arg_def))
@@ -21,6 +22,7 @@ def test_str_args(arg_def):
     st.shared(valid_definition_strings(), key="with_kwargs"),
     extra_fields(st.shared(valid_definition_strings(), key="with_kwargs"), max_size=10),
 )
+@settings(max_examples=settings().max_examples * 10)
 def test_with_kwargs(arg_def, extra_fields):
     kwargs = {f.name: f for f in extra_fields}
     actual = Definition(arg_def, **kwargs)
@@ -32,6 +34,7 @@ def test_with_kwargs(arg_def, extra_fields):
     extra_fields(st.shared(valid_definition_strings(), key="all_pos"), max_size=10),
     st.data(),
 )
+@settings(max_examples=settings().max_examples * 10)
 def test_all_field_positions(arg_def, extras, data):
     args = []
     kwargs = {}
@@ -50,6 +53,7 @@ def test_all_field_positions(arg_def, extras, data):
     extra_fields(st.shared(valid_definition_strings(), key="overwrites"), max_size=10),
     st.data(),
 )
+@settings(max_examples=settings().max_examples * 10)
 def test_kwarg_overwrites_arg_field(arg_def, extra_fields, data):
     kwargs = {f.name: f for f in extra_fields}
     i = data.draw(st.integers(min_value=0, max_value=len(extra_fields) - 1))
@@ -70,6 +74,7 @@ def test_kwarg_overwrites_arg_field(arg_def, extra_fields, data):
         min_size=1,
     )
 )
+@settings(max_examples=settings().max_examples * 10)
 def test_bad_kwargs(kwargs):
     assume(any(k != v for k, v in kwargs.items()))
 

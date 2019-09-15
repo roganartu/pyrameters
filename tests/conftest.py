@@ -7,13 +7,12 @@ import pytest
 pytest_plugins = "pytester", "hypothesis"
 
 # Change some hypothesis settings
-hypothesis.settings.register_profile("default", max_examples=50)
-hypothesis.settings.register_profile("ci", max_examples=1000)
+hypothesis.settings.register_profile("ci", max_examples=1000, print_blob=True)
 hypothesis.settings.register_profile("dev", max_examples=10)
 hypothesis.settings.register_profile(
-    "debug", max_examples=10, verbosity=hypothesis.Verbosity.verbose
+    "debug", max_examples=10, verbosity=hypothesis.Verbosity.verbose, print_blob=True
 )
-hypothesis.settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "default"))
+hypothesis.settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "dev"))
 
 # Register the utils module as a helper so that pytest knows to monkey-patch assert
 # to give nice diffs on failure.

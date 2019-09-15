@@ -100,7 +100,7 @@ def test_cases(
                         ).format(case_vals, f, key=name)
                     )
             case.append(val)
-        arglist.append(tuple(case))
+        arglist.append(tuple(case) if len(argnames.fields) > 1 else case[0])
 
     # This requires:
     # For each value:

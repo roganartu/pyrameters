@@ -43,10 +43,10 @@ def test_cases_unused_smoke_test_multi(x, y, z):
 @given(
     st.shared(any_style_definitions(), key="with_cases"),
     cases_for(
-        st.shared(any_style_definitions(), key="with_cases"), min_count=1, max_count=50
+        st.shared(any_style_definitions(), key="with_cases"), min_count=1, max_count=40
     ),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(milliseconds=2000))
 def test_invocation_count_with_tuples(testdir, definition, cases):
     """
     Verify that the wrapped method is invoked once per test case when using

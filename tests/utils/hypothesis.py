@@ -5,6 +5,7 @@ from hypothesis import assume
 from hypothesis import strategies as st
 
 import pyrameters
+import utils.decorator
 
 
 def everything_except(*args):
@@ -41,6 +42,11 @@ def valid_field_names(draw):
     assume(name.isidentifier())
     assume(not iskeyword(name))
 
+    # This a comprehensive list of field names we use in the decorator test util.
+    # We need to exclude these here so that we don't accidentally overwrite them
+    # in the local scope there.
+    assume(name not in utils.decorator.RESERVED_NAMES)
+
     return name
 
 
@@ -75,8 +81,9 @@ def field_values():
         st.none(),
         st.booleans(),
         st.integers(),
-        st.floats(),
-        st.decimals(),
+        # NaN breaks our equality tests
+        st.floats(allow_nan=False),
+        st.decimals(allow_nan=False),
         st.dates(),
         st.times(),
         st.datetimes(),
@@ -184,18 +191,23 @@ def cases_for(
     min_count=1,
     max_count=10,
     tuples=True,
-    mappings=True,
+    mappings=None,
     use_defaults=None,
 ):
     """
     Generates cases to run through the decorator based on the fields in the given
     definition.
     """
-    assert tuples or mappings, "One of tuples or mappings must be True"
-
     # This is a shared strategy, so we should get the same fields as the definition
     # generated in the given this is called from.
     definition = draw(definition_strategy)
+
+    # Allow mappings if the definition can have defaults and the caller didn't
+    # explicitly request otherwise.
+    if mappings is None and isinstance(definition, pyrameters.Definition):
+        mappings = True
+
+    assert tuples or mappings, "One of tuples or mappings must be True"
 
     # Handle both Definition and string-based
     if isinstance(definition, str):
@@ -215,7 +227,7 @@ def cases_for(
         if should_tuple:
             generated.append(tuple(draw(field_values(), label=f) for f in fields))
 
-        if should_mapping:
+        elif should_mapping:
 
             def should_default(f):
                 # Whether or not we should rely on defaults is a little complicated.
@@ -239,5 +251,10 @@ def cases_for(
                     if not should_default(f)
                 }
             )
+
+    # Make sure that we pass values without the wrapping tuple when parametrizing
+    # a single field.
+    if len(fields) == 1:
+        generated = [g[0] if isinstance(g, tuple) else g for g in generated]
 
     return generated

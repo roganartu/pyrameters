@@ -1,10 +1,13 @@
+from datetime import timedelta
+
 import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from pyrameters import Definition, Field
 from utils.hypothesis import (everything_except, extra_fields,
-                              non_empty_strings, valid_definition_strings)
+                              non_empty_strings, valid_definition_strings,
+                              valid_definitions)
 
 
 def extract_args(arg_def):
@@ -80,3 +83,45 @@ def test_bad_kwargs(kwargs):
 
     with pytest.raises(ValueError):
         actual = Definition(**kwargs)
+
+
+@given(
+    st.shared(
+        st.one_of(valid_definition_strings(), valid_definitions()), key="ordering"
+    ),
+    extra_fields(
+        st.shared(
+            st.one_of(valid_definition_strings(), valid_definitions()), key="ordering"
+        ),
+        min_size=0,
+        max_size=10,
+    ),
+    st.data(),
+)
+@settings(
+    deadline=timedelta(milliseconds=2000), max_examples=settings().max_examples * 5
+)
+def test_ordering(arg_def, extras, data):
+    args = []
+    kwargs = {}
+    for f in extras:
+        if data.draw(st.booleans(), label="as_arg"):
+            args.append(f.name)
+        else:
+            kwargs[f.name] = f
+
+    definition = Definition(arg_def, *args, **kwargs)
+
+    expected_order = []
+    if isinstance(arg_def, str):
+        expected_order = extract_args(arg_def)
+    else:
+        expected_order = list(arg_def.fields.keys())
+
+    # First args, then kwargs in whatever order each of them naturally iterates in.
+    if args:
+        expected_order.extend(args)
+    if kwargs:
+        expected_order.extend(kwargs.keys())
+
+    assert extract_args(str(definition)) == expected_order

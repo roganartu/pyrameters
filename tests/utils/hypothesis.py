@@ -106,12 +106,12 @@ def valid_json(draw, max_leaves=10):
 
 
 @st.composite
-def unique_field_lists(draw, max_size=20, exclude_fields=None):
+def unique_field_lists(draw, min_size=1, max_size=20, exclude_fields=None):
     if exclude_fields is None:
         exclude_fields = []
     exclude_fields = set(exclude_fields)
 
-    target_count = draw(st.integers(min_value=1, max_value=max_size))
+    target_count = draw(st.integers(min_value=min_size, max_value=max_size))
     fields = []
     while len(fields) < target_count:
         f = draw(valid_fields(exclude_names=exclude_fields | {f.name for f in fields}))
@@ -121,7 +121,7 @@ def unique_field_lists(draw, max_size=20, exclude_fields=None):
 
 
 @st.composite
-def extra_fields(draw, definition_strategy, max_size=10):
+def extra_fields(draw, definition_strategy, min_size=1, max_size=10):
     """
     Generates fields with names not in the given definition strategy.
     This is useful for generating new fields to test appending to existing Definitions.
@@ -136,7 +136,9 @@ def extra_fields(draw, definition_strategy, max_size=10):
     else:
         fields = [f for f in definition.fields]
 
-    return draw(unique_field_lists(max_size=max_size, exclude_fields=fields))
+    return draw(
+        unique_field_lists(min_size=min_size, max_size=max_size, exclude_fields=fields)
+    )
 
 
 @st.composite

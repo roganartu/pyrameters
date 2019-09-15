@@ -27,17 +27,22 @@ def test_with_kwargs(arg_def, extra_fields):
     assert len(actual.fields) == len(extract_args(arg_def)) + len(kwargs)
 
 
-@given(valid_definition_strings(), non_empty_strings(), st.data())
-def test_all_field_positions(arg_def, arg_field, data):
-    args = extract_args(arg_def)
-    kwargs = {k: k for k in data.draw(st.sets(non_empty_strings(), min_size=1))}
+@given(
+    st.shared(valid_definition_strings(), key="all_pos"),
+    extra_fields(st.shared(valid_definition_strings(), key="all_pos"), max_size=10),
+    st.data(),
+)
+def test_all_field_positions(arg_def, extras, data):
+    args = []
+    kwargs = {}
+    for f in extras:
+        if data.draw(st.booleans(), label="as_arg"):
+            args.append(f.name)
+        else:
+            kwargs[f.name] = f
 
-    assume(arg_field not in args)
-    assume(arg_field not in kwargs)
-    assume(not any(a in kwargs for a in args))
-
-    actual = Definition(arg_def, arg_field, **kwargs)
-    assert len(actual.fields) == len(args) + len(kwargs) + 1
+    actual = Definition(arg_def, *args, **kwargs)
+    assert len(actual.fields) == len(extract_args(arg_def)) + len(extras)
 
 
 @given(

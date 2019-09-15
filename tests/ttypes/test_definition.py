@@ -59,7 +59,17 @@ def test_kwarg_overwrites_arg_field(arg_def, extra_fields, data):
     assert len(actual.fields) == len(extract_args(arg_def)) + len(extra_fields)
 
 
-@given(st.dictionaries(non_empty_strings(), non_empty_strings(), min_size=1))
+@given(
+    st.dictionaries(
+        # This usage of shared may seem unintuitive, but in practice it appears to cut
+        # the number of invalid examples that the `assume` in the first line of the test
+        # func identifies by approximately half (from ~500 invalids to ~200-250).
+        # This improves generation speed a little.
+        st.shared(non_empty_strings(), key="a"),
+        st.shared(non_empty_strings(), key="b"),
+        min_size=1,
+    )
+)
 def test_bad_kwargs(kwargs):
     assume(any(k != v for k, v in kwargs.items()))
 

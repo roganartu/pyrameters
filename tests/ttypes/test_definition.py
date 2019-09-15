@@ -46,22 +46,17 @@ def test_all_field_positions(arg_def, extras, data):
 
 
 @given(
-    valid_definition_strings(), st.shared(non_empty_strings(), key="field"), st.data()
+    st.shared(valid_definition_strings(), key="overwrites"),
+    extra_fields(st.shared(valid_definition_strings(), key="overwrites"), max_size=10),
+    st.data(),
 )
-def test_kwarg_overwrites_arg_field(arg_def, arg_field, data):
-    args = extract_args(arg_def)
-    kwargs = {
-        k: k
-        for k in data.draw(
-            st.sets(st.shared(non_empty_strings(), key="field"), min_size=1)
-        )
-    }
-
-    assume(arg_field not in args)
-    assume(not any(a in kwargs for a in args))
+def test_kwarg_overwrites_arg_field(arg_def, extra_fields, data):
+    kwargs = {f.name: f for f in extra_fields}
+    i = data.draw(st.integers(min_value=0, max_value=len(extra_fields) - 1))
+    arg_field = extra_fields[i].name
 
     actual = Definition(arg_def, arg_field, **kwargs)
-    assert len(actual.fields) == len(args) + len(kwargs)
+    assert len(actual.fields) == len(extract_args(arg_def)) + len(extra_fields)
 
 
 @given(st.dictionaries(non_empty_strings(), non_empty_strings(), min_size=1))

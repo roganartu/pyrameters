@@ -51,6 +51,8 @@ def test_cases_unused_smoke_test_multi(x, y, z):
 @settings(
     deadline=timedelta(milliseconds=2000), max_examples=settings().max_examples * 1
 )
+# TODO make a specific example of the following:
+# definition='a', cases=[None, None]
 def test_invocation_count_with_tuples(testdir, definition, cases):
     """
     Verify that the wrapped method is invoked once per test case when using
@@ -65,7 +67,10 @@ def test_invocation_count_with_tuples(testdir, definition, cases):
     assert len(failed) == 0
 
 
+# TODO add a test to ensure we get the expected exception when a string definition is
+# provided and Mapping test cases missing one or more of the definition values
+# are provided.
 
-# TODO add test for invocation count using Definition created via string with lists(valid_field_names) and join
-
-# TODO add test for invocation count using Definition created via both string with lists(...) and overrides that are Fields via valid_fields()
+# TODO add test that ensures that @pytest.parameter is passed through unaffected,
+# same as a regular tuple param.
+# Do this by adding a @pytest.parameter builds to cases_for
